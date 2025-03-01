@@ -1,10 +1,5 @@
-﻿/*
-string[] students = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
-string[] courses = { "IOT", "MD", "CV" };
-
-string[] keys = {"IOT", "IOT", "MD", "CV", "MD"};
-string[] values = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
-*/
+﻿//string[] students = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
+//string[] courses = { "IOT", "MD", "CV" };
 
 string[] students = new string[10];
 string[] courses = new string[10];
@@ -49,7 +44,7 @@ while (isRunning)
                     if (students[i] == null)
                     {
                         students[i] = studentNameToAdd;
-                        Console.WriteLine($"Student {studentNameToAdd} added");
+                        Console.WriteLine($"Student [{i}] {studentNameToAdd} added");
                         break;
                     }
                 }
@@ -74,8 +69,8 @@ while (isRunning)
             }
             else
             {
+                Console.WriteLine($"Student [{studentIdtoRemove}] {students[studentIdtoRemove]} removed");
                 students[studentIdtoRemove] = null;
-                Console.WriteLine($"Student [{studentIdtoRemove}] removed");
             }
             break;
         case "4":
@@ -92,7 +87,7 @@ while (isRunning)
                     if (courses[i] == null)
                     {
                         courses[i] = courseNameToAdd;
-                        Console.WriteLine($"Course {courseNameToAdd} added");
+                        Console.WriteLine($"Course [{i}] {courseNameToAdd} added");
                         break;
                     }
                 }
@@ -117,8 +112,8 @@ while (isRunning)
             }
             else
             {
+                Console.WriteLine($"Course [{courseIdtoRemove}] '{courses[courseIdtoRemove]}' removed");
                 courses[courseIdtoRemove] = null;
-                Console.WriteLine($"Student [{courseIdtoRemove}] removed");
             }
             break;
         case "7":
@@ -138,14 +133,15 @@ while (isRunning)
                 break;
             }
 
-            if (enrollments[courseIdForAddToCourse, studentIdForAddToCourse] == true)
+            if (enrollments[courseIdForAddToCourse, studentIdForAddToCourse])
             {
                 Console.WriteLine($"Student [{studentIdForAddToCourse}] is already recorded to course [{courseIdForAddToCourse}]");
             }
             else
             {
                 enrollments[courseIdForAddToCourse, studentIdForAddToCourse] = true;
-                Console.WriteLine($"Student [{studentIdForAddToCourse}] has been recorded to course [{courseIdForAddToCourse}]");
+                Console.WriteLine($"Student [{studentIdForAddToCourse}] {students[studentIdForAddToCourse]} " +
+                    $"has been recorded to course [{courseIdForAddToCourse}] '{courses[courseIdForAddToCourse]}'");
             }
             break;
         case "8":
@@ -156,12 +152,79 @@ while (isRunning)
                 Console.WriteLine($"Course [{courseIdToShow}] doesn't exist");
                 break;
             }
-            Console.WriteLine($"Students on course [{courseIdToShow}]:");
+            Console.WriteLine($"Students on course [{courseIdToShow}] '{courses[courseIdToShow]}':");
             for (int i = 0; i < students.Length; i++)
             {
                 if (enrollments[courseIdToShow, i])
                 {
                     Console.WriteLine($"\t[{i}] {students[i]};");
+                }
+            }
+            break;
+        case "9":
+            for (int idCourse = 0; idCourse < courses.Length; idCourse++)
+            {
+                if (courses[idCourse] != null)
+                {
+                    Console.WriteLine($"Course [{idCourse}] '{courses[idCourse]}':");
+                    for (int idStudent = 0; idStudent < students.Length; idStudent++)
+                    {
+                        if (students[idStudent] != null && enrollments[idCourse, idStudent])
+                        {
+                            Console.WriteLine($"\t[{idStudent}] {students[idStudent]};");
+                        }
+                    }
+                }
+            }
+            break;
+        case "10":
+            Console.Write("Enter student's id: ");
+            int studentIdToUnrecord = int.Parse(Console.ReadLine());
+            if (students[studentIdToUnrecord] == null)
+            {
+                Console.WriteLine($"Student [{studentIdToUnrecord}] doesn't exist");
+                break;
+            }
+
+            Console.Write("Enter course's id: ");
+            int courseIdToUnrecord = int.Parse(Console.ReadLine());
+            if (courses[courseIdToUnrecord] == null)
+            {
+                Console.WriteLine($"Course [{courseIdToUnrecord}] doesn't exist");
+                break;
+            }
+
+            bool isStudentRecored = enrollments[courseIdToUnrecord, studentIdToUnrecord];
+            if (isStudentRecored == null || !isStudentRecored)
+            {
+                Console.WriteLine($"Student [{studentIdToUnrecord}] {students[studentIdToUnrecord]} " +
+                    $"isn't recorded to course [{courseIdToUnrecord}] {courses[courseIdToUnrecord]}");
+            }
+            else
+            {
+                enrollments[courseIdToUnrecord, studentIdToUnrecord] = false;
+                Console.WriteLine($"Student [{studentIdToUnrecord}] {students[studentIdToUnrecord]} " +
+                    $"was unrecorded to course [{courseIdToUnrecord}] {courses[courseIdToUnrecord]}");
+            }
+            break;
+        case "11":
+            Console.Write("Enter student's name: ");
+            string studentNameToFind = Console.ReadLine().ToLower();
+            if (studentNameToFind.Length == 0)
+            {
+                Console.WriteLine("Enter at least 1 char");
+                break;
+            }
+            Console.WriteLine("Search result:");
+            for (int studentId = 0; studentId < students.Length; studentId++)
+            {
+                if (students[studentId] != null)
+                {
+                    string studentNameToCompare = students[studentId].ToLower();
+                    if (studentNameToCompare.Contains(studentNameToFind))
+                    {
+                        Console.WriteLine($"\t[{studentId}] {students[studentId]}");
+                    }
                 }
             }
             break;
@@ -178,4 +241,3 @@ while (isRunning)
             break;
     }
 }
-
