@@ -1,8 +1,5 @@
 ﻿internal class Program
 {
-    //string[] students = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
-    //string[] courses = { "IOT", "MD", "CV" };
-
     static string[] students = new string[10];
     static string[] courses = new string[10];
     static bool[,] enrollments = new bool[10, 10];
@@ -208,13 +205,13 @@
         if (isStudentRecored == null || !isStudentRecored)
         {
             Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
-                $"isn't recorded to course [{courseId}] {courses[courseId]}");
+                $"isn't recorded to course [{courseId}] '{courses[courseId]}'");
         }
         else
         {
             enrollments[courseId, studentId] = false;
             Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
-                $"was unrecorded to course [{courseId}] {courses[courseId]}");
+                $"was unrecorded to course [{courseId}] '{courses[courseId]}'");
         }
     }
 
