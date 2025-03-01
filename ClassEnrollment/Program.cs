@@ -1,243 +1,306 @@
-﻿//string[] students = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
-//string[] courses = { "IOT", "MD", "CV" };
-
-string[] students = new string[10];
-string[] courses = new string[10];
-
-bool[,] enrollments = new bool[10, 10];
-
-
-Console.WriteLine("Menu:");
-Console.WriteLine("1. Add student");
-Console.WriteLine("2. Show all students");
-Console.WriteLine("3. Remove student");
-Console.WriteLine("4. Add course");
-Console.WriteLine("5. Show all courses");
-Console.WriteLine("6. Remove course");
-Console.WriteLine("7. Add student to course");
-Console.WriteLine("8. Show course's students");
-Console.WriteLine("9. Show all course-student");
-Console.WriteLine("10. Remove student from course");
-Console.WriteLine("11. Find student by name");
-Console.WriteLine("99. Exit");
-
-bool isRunning = true;
-
-while (isRunning)
+﻿internal class Program
 {
-    Console.Write(">> ");
-    string choice = Console.ReadLine();
+    //string[] students = { "Maxy", "Danny", "Glebby", "Pavel", "Alex" };
+    //string[] courses = { "IOT", "MD", "CV" };
 
-    switch (choice)
+    static string[] students = new string[10];
+    static string[] courses = new string[10];
+    static bool[,] enrollments = new bool[10, 10];
+
+    static void StartPrint()
     {
-        case "1":
-            Console.Write("Enter student's name: ");
-            string studentNameToAdd = Console.ReadLine();
-            if (studentNameToAdd.Length == 0)
-            {
-                Console.WriteLine("Name must be longer than 0");
-            }
-            else
-            {
-                for (int i = 0; i < students.Length; i++)
-                {
-                    if (students[i] == null)
-                    {
-                        students[i] = studentNameToAdd;
-                        Console.WriteLine($"Student [{i}] {studentNameToAdd} added");
-                        break;
-                    }
-                }
-            }
-            break;
-        case "2":
-            Console.WriteLine("Students list:");
-            for (int i = 0; i < students.Length; i++)
-            {
-                if (students[i] != null)
-                {
-                    Console.WriteLine($"\t[{i}] {students[i]};");
-                }
-            }
-            break;
-        case "3":
-            Console.Write("Enter student's id: ");
-            int studentIdtoRemove = int.Parse(Console.ReadLine());
-            if (students[studentIdtoRemove] == null)
-            {
-                Console.WriteLine($"Student [{studentIdtoRemove}] doesn't exist");
-            }
-            else
-            {
-                Console.WriteLine($"Student [{studentIdtoRemove}] {students[studentIdtoRemove]} removed");
-                students[studentIdtoRemove] = null;
-            }
-            break;
-        case "4":
-            Console.Write("Enter courses's name: ");
-            string courseNameToAdd = Console.ReadLine();
-            if (courseNameToAdd.Length == 0)
-            {
-                Console.WriteLine("Name must be longer than 0");
-            }
-            else
-            {
-                for (int i = 0; i < courses.Length; i++)
-                {
-                    if (courses[i] == null)
-                    {
-                        courses[i] = courseNameToAdd;
-                        Console.WriteLine($"Course [{i}] {courseNameToAdd} added");
-                        break;
-                    }
-                }
-            }
-            break;
-        case "5":
-            Console.WriteLine("Courses list:");
-            for (int i = 0; i < courses.Length; i++)
-            {
-                if (courses[i] != null)
-                {
-                    Console.WriteLine($"\t[{i}] {courses[i]};");
-                }
-            }
-            break;
-        case "6":
-            Console.Write("Enter course's id: ");
-            int courseIdtoRemove = int.Parse(Console.ReadLine());
-            if (courses[courseIdtoRemove] == null)
-            {
-                Console.WriteLine($"Course [{courseIdtoRemove}] doesn't exist");
-            }
-            else
-            {
-                Console.WriteLine($"Course [{courseIdtoRemove}] '{courses[courseIdtoRemove]}' removed");
-                courses[courseIdtoRemove] = null;
-            }
-            break;
-        case "7":
-            Console.Write("Enter student's id: ");
-            int studentIdForAddToCourse = int.Parse(Console.ReadLine());
-            if (students[studentIdForAddToCourse] == null)
-            {
-                Console.WriteLine($"Student [{studentIdForAddToCourse}] doesn't exist");
-                break;
-            }
+        Console.WriteLine("Menu:");
+        Console.WriteLine("1.                   Add student");
+        Console.WriteLine("2.                   Show all students");
+        Console.WriteLine("3.                   Remove student");
+        Console.WriteLine("4.                   Add course");
+        Console.WriteLine("5.                   Show all courses");
+        Console.WriteLine("6.                   Remove course");
+        Console.WriteLine("7.                   Add student to course");
+        Console.WriteLine("8.                   Show course's students");
+        Console.WriteLine("9.                   Show all course-student");
+        Console.WriteLine("10.                  Remove student from course");
+        Console.WriteLine("11.                  Find student by name");
+        Console.WriteLine("(99, exit, q, quit). Exit");
+    }
 
-            Console.Write("Enter course's id: ");
-            int courseIdForAddToCourse = int.Parse(Console.ReadLine());
-            if (courses[courseIdForAddToCourse] == null)
+    static int GetValidId(string[] array, string entityName)
+    {
+        Console.Write($"Enter {entityName.ToLower()}'s id: ");
+        try
+        {
+            int id = int.Parse(Console.ReadLine());
+            if (array[id] == null)
             {
-                Console.WriteLine($"Course [{courseIdForAddToCourse}] doesn't exist");
-                break;
+                Console.WriteLine($"{entityName} [{id}] doesn't exist");
+                return -1;
             }
+            return id;
+        }
+        catch (Exception ex)
+        {
+            if (ex is FormatException || ex is IndexOutOfRangeException)
+            {
+                Console.WriteLine($"{entityName}'s id must be positive integer");
+                return -1;
+            }
+            else throw;
+        }
+    }
 
-            if (enrollments[courseIdForAddToCourse, studentIdForAddToCourse])
+    static string? GetValidName(string entityName)
+    {
+        Console.Write($"Enter {entityName.ToLower()}'s name: ");
+        string input = Console.ReadLine();
+        if (input.Length == 0)
+        {
+            Console.WriteLine($"{entityName}'s name must be longer than 0");
+            return null;
+        }
+        return input;
+    }
+
+    static void AddEntity(string[] array, string entityName)
+    {
+        string? name = GetValidName(entityName);
+        if (name == null) return;
+        int i;
+        for (i = 0; i < array.Length; i++)
+        {
+            if (array[i] == null)
             {
-                Console.WriteLine($"Student [{studentIdForAddToCourse}] is already recorded to course [{courseIdForAddToCourse}]");
+                array[i] = name;
+                Console.WriteLine($"{entityName} [{i}] '{name}' added");
+                return;
             }
-            else
+        }
+        Console.WriteLine($"Array of {entityName.ToLower()}s is full");
+    }
+
+    static void ShowList(string[] array, string entityName)
+    {
+        Console.WriteLine($"{entityName}'s list:");
+        bool isEmpty = true;
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] != null)
             {
-                enrollments[courseIdForAddToCourse, studentIdForAddToCourse] = true;
-                Console.WriteLine($"Student [{studentIdForAddToCourse}] {students[studentIdForAddToCourse]} " +
-                    $"has been recorded to course [{courseIdForAddToCourse}] '{courses[courseIdForAddToCourse]}'");
+                Console.WriteLine($"\t[{i}] {array[i]};");
+                isEmpty = false;
             }
-            break;
-        case "8":
-            Console.Write("Enter course's id: ");
-            int courseIdToShow = int.Parse(Console.ReadLine());
-            if (courses[courseIdToShow] == null)
+        }
+        if (isEmpty)
+        {
+            Console.WriteLine("\tempty");
+        }
+    }
+
+    static void RemoveEntity(string[] array, string entityName)
+    {
+        int id = GetValidId(array, entityName);
+        if (id != -1)
+        {
+            Console.WriteLine($"{entityName} [{id}] {array[id]} removed");
+            array[id] = null;
+        }
+    }
+
+    static void ShowCourseStudents(int courseId)
+    {
+        bool noStudents = true;
+        Console.WriteLine($"Students on course [{courseId}] '{courses[courseId]}':");
+        for (int i = 0; i < students.Length; i++)
+        {
+            if (enrollments[courseId, i])
             {
-                Console.WriteLine($"Course [{courseIdToShow}] doesn't exist");
-                break;
+                Console.WriteLine($"\t[{i}] {students[i]};");
+                noStudents = false;
             }
-            Console.WriteLine($"Students on course [{courseIdToShow}] '{courses[courseIdToShow]}':");
-            for (int i = 0; i < students.Length; i++)
+        }
+        if (noStudents)
+        {
+            Console.WriteLine("\tno students");
+        }
+    }
+
+    static void AddStudent()
+    {
+        AddEntity(students, "Student");
+    }
+
+    static void ShowAllStudents()
+    {
+        ShowList(students, "Student");
+    }
+
+    static void RemoveStudent()
+    {
+        RemoveEntity(students, "Student");
+    }
+
+    static void AddCourse()
+    {
+        AddEntity(courses, "Course");
+    }
+
+    static void ShowAllCourses()
+    {
+        ShowList(courses, "Course");
+    }
+
+    static void RemoveCourse()
+    {
+        RemoveEntity(courses, "Course");
+    }
+
+    static void AddStudentToCourse()
+    {
+        int studentId = GetValidId(students, "Student");
+        if (studentId == -1) return;
+        int courseId = GetValidId(courses, "Course");
+        if (courseId == -1) return;
+
+        if (enrollments[courseId, studentId])
+        {
+            Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
+                $"is already recorded to course [{courseId}] {courses[courseId]}");
+        }
+        else
+        {
+            enrollments[courseId, studentId] = true;
+            Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
+                $"has been recorded to course [{courseId}] '{courses[courseId]}'");
+        }
+    }
+
+    static void ShowStudentsOnCourse()
+    {
+        int id = GetValidId(courses, "Course");
+        if (id == -1) return;
+        ShowCourseStudents(id);
+    }
+
+    static void ShowAllStudentsAndCourses()
+    {
+        int counter = 0;
+        for (int idCourse = 0; idCourse < courses.Length; idCourse++)
+        {
+            if (courses[idCourse] != null)
             {
-                if (enrollments[courseIdToShow, i])
+                ShowCourseStudents(idCourse);
+                counter++;
+            }
+        }
+        if (counter == 0)
+        {
+            Console.WriteLine("No courses");
+        }
+    }
+
+    static void RemoveStudentFromCourse()
+    {
+        int studentId = GetValidId(students, "Student");
+        if (studentId == -1) return;
+        int courseId = GetValidId(courses, "Course");
+        if (courseId == -1) return;
+
+        bool isStudentRecored = enrollments[courseId, studentId];
+        if (isStudentRecored == null || !isStudentRecored)
+        {
+            Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
+                $"isn't recorded to course [{courseId}] {courses[courseId]}");
+        }
+        else
+        {
+            enrollments[courseId, studentId] = false;
+            Console.WriteLine($"Student [{studentId}] {students[studentId]} " +
+                $"was unrecorded to course [{courseId}] {courses[courseId]}");
+        }
+    }
+
+    static void FindStudentByName()
+    {
+        string? name = GetValidName("Student");
+        if (name == null) return;
+        name = name.ToLower();
+
+        bool noResult = true;
+        Console.WriteLine("Search result:");
+        for (int studentId = 0; studentId < students.Length; studentId++)
+        {
+            if (students[studentId] != null)
+            {
+                string studentNameToCompare = students[studentId].ToLower();
+                if (studentNameToCompare.Contains(name))
                 {
-                    Console.WriteLine($"\t[{i}] {students[i]};");
+                    Console.WriteLine($"\t[{studentId}] {students[studentId]}");
+                    noResult = false;
                 }
             }
-            break;
-        case "9":
-            for (int idCourse = 0; idCourse < courses.Length; idCourse++)
-            {
-                if (courses[idCourse] != null)
-                {
-                    Console.WriteLine($"Course [{idCourse}] '{courses[idCourse]}':");
-                    for (int idStudent = 0; idStudent < students.Length; idStudent++)
-                    {
-                        if (students[idStudent] != null && enrollments[idCourse, idStudent])
-                        {
-                            Console.WriteLine($"\t[{idStudent}] {students[idStudent]};");
-                        }
-                    }
-                }
-            }
-            break;
-        case "10":
-            Console.Write("Enter student's id: ");
-            int studentIdToUnrecord = int.Parse(Console.ReadLine());
-            if (students[studentIdToUnrecord] == null)
-            {
-                Console.WriteLine($"Student [{studentIdToUnrecord}] doesn't exist");
-                break;
-            }
+        }
+        if (noResult)
+        {
+            Console.WriteLine("\tno result");
+        }
+    }
 
-            Console.Write("Enter course's id: ");
-            int courseIdToUnrecord = int.Parse(Console.ReadLine());
-            if (courses[courseIdToUnrecord] == null)
-            {
-                Console.WriteLine($"Course [{courseIdToUnrecord}] doesn't exist");
-                break;
-            }
+    static void Main()
+    {
+        StartPrint();
+        bool isRunning = true;
 
-            bool isStudentRecored = enrollments[courseIdToUnrecord, studentIdToUnrecord];
-            if (isStudentRecored == null || !isStudentRecored)
-            {
-                Console.WriteLine($"Student [{studentIdToUnrecord}] {students[studentIdToUnrecord]} " +
-                    $"isn't recorded to course [{courseIdToUnrecord}] {courses[courseIdToUnrecord]}");
-            }
-            else
-            {
-                enrollments[courseIdToUnrecord, studentIdToUnrecord] = false;
-                Console.WriteLine($"Student [{studentIdToUnrecord}] {students[studentIdToUnrecord]} " +
-                    $"was unrecorded to course [{courseIdToUnrecord}] {courses[courseIdToUnrecord]}");
-            }
-            break;
-        case "11":
-            Console.Write("Enter student's name: ");
-            string studentNameToFind = Console.ReadLine().ToLower();
-            if (studentNameToFind.Length == 0)
-            {
-                Console.WriteLine("Enter at least 1 char");
-                break;
-            }
-            Console.WriteLine("Search result:");
-            for (int studentId = 0; studentId < students.Length; studentId++)
-            {
-                if (students[studentId] != null)
-                {
-                    string studentNameToCompare = students[studentId].ToLower();
-                    if (studentNameToCompare.Contains(studentNameToFind))
-                    {
-                        Console.WriteLine($"\t[{studentId}] {students[studentId]}");
-                    }
-                }
-            }
-            break;
-        case "99":
-        case "quit":
-        case "q":
-        case "exit":
-            Console.WriteLine("Program over");
-            isRunning = false;
-            break;
+        while (isRunning)
+        {
+            Console.Write(">> ");
+            string choice = Console.ReadLine();
 
-        default:
-            Console.WriteLine("Wrong option. Try again");
-            break;
+            switch (choice)
+            {
+                case "1":
+                    AddStudent();
+                    break;
+                case "2":
+                    ShowAllStudents();
+                    break;
+                case "3":
+                    RemoveStudent();
+                    break;
+                case "4":
+                    AddCourse();
+                    break;
+                case "5":
+                    ShowAllCourses();
+                    break;
+                case "6":
+                    RemoveCourse();
+                    break;
+                case "7":
+                    AddStudentToCourse();
+                    break;
+                case "8":
+                    ShowStudentsOnCourse();
+                    break;
+                case "9":
+                    ShowAllStudentsAndCourses();
+                    break;
+                case "10":
+                    RemoveStudentFromCourse();
+                    break;
+                case "11":
+                    FindStudentByName();
+                    break;
+                case "99":
+                case "quit":
+                case "q":
+                case "exit":
+                    Console.WriteLine("Program over");
+                    isRunning = false;
+                    break;
+
+                default:
+                    Console.WriteLine("Wrong option. Try again");
+                    break;
+            }
+        }
     }
 }
