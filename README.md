@@ -4,3 +4,4 @@
 
 1. [Консольное приложение с студентами и курсами](ClassEnrollment/).
 2. [Студентики](GradesApp/).
+3. [Иерархия классов](ClassHierarchySystem/).
