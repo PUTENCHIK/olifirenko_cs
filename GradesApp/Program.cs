@@ -1,4 +1,8 @@
-﻿public enum GradeType
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+
+public enum GradeType
 {
     bad = 2,            // неуд
     passably = 3,       // уд
@@ -25,6 +29,20 @@ interface IGrading
     float AverageGrade();
     void ShowGradesCount();
     void ShowMostPopularRareGrade();
+}
+
+interface IFileSystem
+{
+    void SaveGradesToFile(string filePath = "grades_data.txt");
+    void LoadGradesFromFile(string filePath = "grades_data.txt");
+    void SaveStudentsToFile(string filePath = "students_data.txt");
+    void LoadStudentsFromFile(string filePath = "students_data.txt");
+    void SaveReportToFile(string filePath = "report.txt");
+    void AppendStudentToFile(string name, string filePath = "students_data.txt");
+    void AppendGradeToFile(string studentName, string course, string grade, string filePath = "grades_data.txt");
+    void ClearDataFile(string filePath);
+    void BackupDataFile(string filePath);
+    void FindStudentInFile(string studentName, string filePathStud = "students_data.txt", string filePathGrad = "grades_data.txt");
 }
 
 public class Student
@@ -62,7 +80,7 @@ public class Student
     }
 }
 
-public class GradeSystem : IGrading
+public class GradeSystem : IGrading, IFileSystem
 {
     private Dictionary<string, Student> students = new Dictionary<string, Student>();
     public event Action<Student, string, GradeType> GradeAdded;
@@ -229,6 +247,134 @@ public class GradeSystem : IGrading
 
     }
 
+    public void SaveGradesToFile(string filePath = "grades_data.txt")
+    {
+        int counter = 0;
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            foreach (Student student in students.Values)
+            {
+                foreach (var course in student.Grades)
+                {
+                    foreach (GradeType grade in course.Value)
+                    {
+                        writer.WriteLine($"{student.Name}, {course.Key}, {grade}");
+                        counter++;
+                    }
+                }
+            }
+        }
+        Console.WriteLine($"[SUCCESS] Saved {counter} rows into {filePath}");
+    }
+
+    public void LoadGradesFromFile(string filePath = "grades_data.txt")
+    {
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"[ERROR] File {filePath} doesn't exist");
+            return;
+        }
+        
+        int gradesCounter = 0, studentsCounter = 0;
+        using (StreamReader reader = new StreamReader(filePath))
+        {
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                string[] parts = line.Split(',');
+                if (parts.Length == 3 && Enum.TryParse(parts[2], out GradeType grade))
+                {
+                    gradesCounter++;
+                    string studentName = parts[0].Trim();
+                    Student student;
+                    if ((student = GetStudent(studentName)) == null)
+                    {
+                        student = AddStudent(studentName);
+                        studentsCounter++;
+                    }
+                    AddGrade(student, parts[1].Trim(), grade);
+                }
+                else
+                    Console.WriteLine($"[WARNING] Impossible to parse line: {line}");
+            }
+        }
+        Console.WriteLine($"[SUCCESS] Loaded {gradesCounter} grades, added {studentsCounter} students");
+    }
+
+    public void SaveStudentsToFile(string filePath = "students_data.txt")
+    {
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            foreach (Student student in students.Values)
+                writer.WriteLine($"{student.Name}");
+        }
+    }
+    
+    public void LoadStudentsFromFile(string filePath = "students_data.txt")
+    {
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"[ERROR] File {filePath} doesn't exist");
+            return;
+        }
+        using (StreamReader reader = new StreamReader(filePath))
+        {
+            string line;
+            while ((line = reader.ReadLine().Trim()) != null)
+                AddStudent(line);
+        }
+    }
+
+    public void SaveReportToFile(string filePath = "report.txt")
+    {
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            writer.WriteLine("Grades report:");
+            bool studentsExist = false;
+            foreach (Student student in students.Values)
+            {
+                studentsExist = true;
+                writer.WriteLine($"\n\tStudent {student.Name}:");
+                bool hasCourses = false;
+                foreach (var course in student.Grades)
+                {
+                    hasCourses = true;
+                    writer.WriteLine($"\t\t{course.Key}: {string.Join(", ", course.Value)}");
+                }
+                if (!hasCourses)
+                    writer.WriteLine("\t\tNo courses");
+                writer.WriteLine($"\t\tAvg grade: {student.GetAverageGrade()}");
+            }
+            if (!studentsExist)
+                writer.WriteLine("\tNo students");
+        }
+        Console.WriteLine($"[SUCCESS] Grades report saves into {filePath}");
+    }
+
+    public void AppendStudentToFile(string name, string filePath = "students_data.txt")
+    {
+
+    }
+
+    public void AppendGradeToFile(string studentName, string course, string grade, string filePath = "grades_data.txt")
+    {
+
+    }
+
+    public void ClearDataFile(string filePath)
+    {
+
+    }
+
+    public void BackupDataFile(string filePath)
+    {
+
+    }
+
+    public void FindStudentInFile(string studentName, string filePathStud = "students_data.txt", string filePathGrad = "grades_data.txt")
+    {
+
+    }
 }
 
 public class NotificationSystem
@@ -246,24 +392,76 @@ public class NotificationSystem
 
 class Program
 {
-    static IGrading gs;
+    static GradeSystem gs;
     static NotificationSystem ns;
 
     static void PrintMenu()
     {
-        Console.WriteLine("Menu:");
-        Console.WriteLine("0.  Add prepared data");
-        Console.WriteLine("1.  Add student");
-        Console.WriteLine("2.  Delete student");
-        Console.WriteLine("3.  Add grade to student");
-        Console.WriteLine("4.  Show student's grades");
-        Console.WriteLine("5.  Show top students");
-        Console.WriteLine("6.  Find students by grade");
-        Console.WriteLine("7.  Change student's name");
-        Console.WriteLine("8.  Delete course");
-        Console.WriteLine("9.  Show the best and the worst students");
-        Console.WriteLine("99. Exit");
+        Console.WriteLine("Work with files:");
+        Console.WriteLine("[sg] Save grades to file");
+        Console.WriteLine("[lg] Load grades from file");
+        Console.WriteLine("[ss] Save students to file");
+        Console.WriteLine("[ls] Load students from file");
+        Console.WriteLine("[sr] Save report to file");
+        Console.WriteLine("[as] Append student to file");
+        Console.WriteLine("[ag] Append grade to file");
+        Console.WriteLine("[cd] Clear data file");
+        Console.WriteLine("[bd] Backup data file");
+        Console.WriteLine("[fs] Find studentIn file");
+        Console.WriteLine("\nMenu:");
+        Console.WriteLine("[0]  Add prepared data");
+        Console.WriteLine("[1]  Add student");
+        Console.WriteLine("[2]  Delete student");
+        Console.WriteLine("[3]  Add grade to student");
+        Console.WriteLine("[4]  Show student's grades");
+        Console.WriteLine("[5]  Show top students");
+        Console.WriteLine("[6]  Find students by grade");
+        Console.WriteLine("[7]  Change student's name");
+        Console.WriteLine("[8]  Delete course");
+        Console.WriteLine("[9]  Show the best and the worst students");
+        Console.WriteLine("[10] Show full grades statistic");
+        Console.WriteLine("\n[99] Exit + save report");
     }
+
+    static string GetFilePath(string label)
+    {
+        Console.Write($"Enter file name {label} (empty to save into default file): ");
+        return Console.ReadLine();
+    }
+    
+    static void SaveGradesToFile()
+    {
+        string filePath = GetFilePath("to save grades");
+        if (filePath.Length == 0)
+            gs.SaveGradesToFile();
+        else
+            gs.SaveGradesToFile(filePath);
+    }
+
+    static void LoadGradesFromFile()
+    {
+        string filePath = GetFilePath("to load grades");
+        if (filePath.Length == 0)
+            gs.LoadGradesFromFile();
+        else
+            gs.LoadGradesFromFile(filePath);
+    }
+
+    static void SaveStudentsToFile()
+    {
+
+    }
+
+    static void LoadStudentsFromFile()
+    {
+
+    }
+
+    static void SaveReportToFile()
+    {
+
+    }
+
 
     static void AddPreparedData()
     {
@@ -438,13 +636,6 @@ class Program
         gs.ShowMostPopularRareGrade();
     }
 
-    //TODO
-    // Grade stats:
-    // * Общее кол-во оценок
-    // * Средний бал по всей системе
-    // * Количество каждой оценки
-    // * Самый популярный и редкий балл
-
     static void Main()
     {
         gs = new GradeSystem();
@@ -459,6 +650,22 @@ class Program
             string choice = Console.ReadLine();
             switch (choice)
             {
+                case "sg":
+                    SaveGradesToFile();
+                    break;
+                case "lg":
+                    LoadGradesFromFile();
+                    break;
+                case "ss":
+                    SaveStudentsToFile();
+                    break;
+                case "ls":
+                    LoadStudentsFromFile();
+                    break;
+                case "sr":
+                    SaveReportToFile();
+                    break;
+
                 case "0":
                     AddPreparedData();
                     break;
@@ -492,7 +699,9 @@ class Program
                 case "10":
                     ShowFullGradeStatistics();
                     break;
+                
                 case "99": case "q": case "exit": case "quit":
+                    gs.SaveReportToFile();
                     Console.WriteLine("Program is over");
                     return;
                 default:
