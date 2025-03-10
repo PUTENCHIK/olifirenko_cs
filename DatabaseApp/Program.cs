@@ -18,12 +18,22 @@ public class Student
     public string Name { get; set; }
     public int Age { get; set; }
     public List<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+
+    public override string ToString()
+    {
+        return $"[{Id}] {Name}, {Age} y.o.";
+    }
 }
 
 public class Course
 {
     public int Id { get; set; }
     public string Title { get; set; }
+
+    public override string ToString()
+    {
+        return $"[{Id}] '{Title}'";
+    }
 }
 
 public class Enrollment
@@ -34,6 +44,11 @@ public class Enrollment
     public double Grade { get; set; }
     public Student Student { get; set; }
     public Course Course { get; set; }
+
+    public override string ToString()
+    {
+        return $"[{Id}] ({Student}) -- ({Course}): {Grade}";
+    }
 }
 
 public class UniversityContext: DbContext
@@ -50,19 +65,20 @@ public class UniversityContext: DbContext
 
 class Program
 {
-    static string? GetString(string label)
+    static string? GetString(string label, bool canBeEmpty = false)
     {
         Console.Write($"Enter {label.ToLower()}: ");
         var input = Console.ReadLine();
         if (input.Length == 0)
         {
-            Console.WriteLine($"[ERROR] {label} is required");
+            if (!canBeEmpty)
+                Console.WriteLine($"[ERROR] {label} is required");
             return null;
         }
         return input;
     }
 
-    static int GetInt(string label)
+    static int GetInt(string label, bool canBeEmpty = false)
     {
         Console.Write($"Enter {label.ToLower()}: ");
         try
@@ -77,7 +93,8 @@ class Program
         }
         catch
         {
-            Console.WriteLine("[ERROR] You must enter integer number");
+            if (!canBeEmpty)
+                Console.WriteLine("[ERROR] You must enter integer number");
             return -1;
         }
     }
@@ -112,8 +129,18 @@ class Program
                     Grade = 4
                 },
                 new Enrollment {
+                    StudentId = students[0].Id,
+                    CourseId = courses[2].Id,
+                    Grade = 2
+                },
+                new Enrollment {
                     StudentId = students[1].Id,
                     CourseId = courses[2].Id,
+                    Grade = 5
+                },
+                new Enrollment {
+                    StudentId = students[1].Id,
+                    CourseId = courses[0].Id,
                     Grade = 5
                 },
                 new Enrollment {
@@ -122,14 +149,30 @@ class Program
                     Grade = 2
                 },
                 new Enrollment {
+                    StudentId = students[2].Id,
+                    CourseId = courses[0].Id,
+                    Grade = 3
+                },
+                new Enrollment {
+                    StudentId = students[2].Id,
+                    CourseId = courses[2].Id,
+                    Grade = 5
+                },
+                new Enrollment {
                     StudentId = students[3].Id,
                     CourseId = courses[1].Id,
                     Grade = 3
+                },
+                new Enrollment {
+                    StudentId = students[3].Id,
+                    CourseId = courses[2].Id,
+                    Grade = 4
                 },
             };
 
             context.Enrollments.AddRange(enrollments);
             context.SaveChanges();
+            Console.WriteLine($"[SUCCESS] {students.Count} students, {courses.Count} courses and {enrollments.Count} enrollments have been added to DB");
         }
     }
 
@@ -143,7 +186,7 @@ class Program
         var student = new Student { Name = name, Age = age};
         context.Students.Add(student);
         context.SaveChanges();
-        Console.WriteLine($"[SUCCESS] New student {name}, {age} y.o. has been added");
+        Console.WriteLine($"[SUCCESS] New student {student} has been added");
     }
 
     static void AddCourse(UniversityContext context)
@@ -154,7 +197,7 @@ class Program
         var course = new Course { Title = title };
         context.Courses.Add(course);
         context.SaveChanges();
-        Console.WriteLine($"[SUCCESS] New course '{title}' has been added");
+        Console.WriteLine($"[SUCCESS] New course {course} has been added");
     }
 
     static void ShowAllStudents(UniversityContext context)
@@ -165,7 +208,7 @@ class Program
         foreach (var student in students)
         {
             studentsExist = true;
-            Console.WriteLine($"\t[{student.Id}] {student.Name}, {student.Age} y.o.");
+            Console.WriteLine($"\t{student}");
         }
         if (!studentsExist)
             Console.WriteLine("\tno students");
@@ -179,7 +222,7 @@ class Program
         foreach (var course in courses)
         {
             coursesExist = true;
-            Console.WriteLine($"\t[{course.Id}] '{course.Title}'");
+            Console.WriteLine($"\t{course}");
         }
         if (!coursesExist)
             Console.WriteLine("\tno courses");
@@ -206,7 +249,16 @@ class Program
         }
 
         Console.Write("Enter grade: ");
-        double grade = double.Parse(Console.ReadLine());
+        double grade;
+        try
+        {
+            grade = double.Parse(Console.ReadLine());
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("[ERROR] Wrong format of float");
+            return;
+        }
 
         var enrollment = new Enrollment {
             StudentId = studentId,
@@ -215,7 +267,7 @@ class Program
         };
         context.Enrollments.Add(enrollment);
         context.SaveChanges();
-        Console.WriteLine($"Student [{studentId}] has been enrolled on course [{courseId}]");
+        Console.WriteLine($"New enrollment: {enrollment}");
     }
 
     static void QueryStudents(UniversityContext context)
@@ -247,15 +299,13 @@ class Program
         var student = context.Students.Find(studentId);
         if (student != null)
         {
-            var newName = GetString("New name");
-            if (newName == null) return;
-            int newAge = GetInt("New age");
-            if (newAge == -1) return;
+            var newName = GetString("New name", canBeEmpty: true);
+            int newAge = GetInt("New age", canBeEmpty: true);
 
-            student.Name = newName;
-            student.Age = newAge;
+            student.Name = newName == null ? student.Name : newName;
+            student.Age = newAge == -1 ? student.Age : newAge;
             context.SaveChanges();
-            Console.WriteLine($"[SUCCESS] Student [{studentId}] has been updated");
+            Console.WriteLine($"[SUCCESS] Updated student: {student}");
         }
         else Console.WriteLine($"[ERROR] Student [{studentId}] doesn't exist");
     }
@@ -270,19 +320,19 @@ class Program
         {
             context.Students.Remove(student);
             context.SaveChanges();
-            Console.WriteLine($"[SUCCESS] Student [{studentId}] has been deleted");
+            Console.WriteLine($"[SUCCESS] Student {student} has been deleted");
         }
         else Console.WriteLine($"[ERROR] Student [{studentId}] doesn't exist");
     }
 
-    static void FindStudentByAge(UniversityContext context)
+    static void FindStudentsByAge(UniversityContext context)
     {
         int age = GetInt("Student's age");
         if (age == -1) return;
         var students = context.Students.Where(s => s.Age == age).ToList();
         Console.WriteLine($"Students {age} y.o.:");
         foreach (var student in students)
-            Console.WriteLine($"[{student.Id}] {student.Name}");
+            Console.WriteLine($"\t{student}");
         if (students.Count() == 0)
             Console.WriteLine($"No students {age} y.o.");
     }
@@ -292,79 +342,191 @@ class Program
         ShowAllStudents(context);
         int studentId = GetInt("Student's id");
         if (studentId == -1) return;
+        var student = context.Students.Find(studentId);
+
         var courses = context.Enrollments
             .Where(e => e.StudentId == studentId)
             .Select(e => e.Course)
             .ToList();
-        Console.WriteLine($"Student [{studentId}]'s courses:");
+        Console.WriteLine($"Courses of {student}:");
         foreach (var course in courses)
-            Console.WriteLine($"[{course.Id}] '{course.Title}'");
-        if (courses.Count() == 0)
+            Console.WriteLine($"\t{course}");
+        if (courses.Count == 0)
             Console.WriteLine($"Student [{studentId}] doesn't have any courses");
     }
+
+    static void ShowStudentsSortedByAge(UniversityContext context)
+    {
+        var studentsAscending = context.Students.OrderBy(s => s.Age).ToList();
+        if (studentsAscending.Count == 0)
+        {
+            Console.WriteLine("No students");
+            return;
+        }
+
+        Console.WriteLine("Students sorted by age ascending:");
+        foreach (var student in studentsAscending)
+            Console.WriteLine($"\tstudent");
+
+        var studentsDescending  = context.Students.OrderByDescending(s => s.Age).ToList();
+        Console.WriteLine("\nStudents sorted by age descending:");
+        foreach (var student in studentsDescending)
+            Console.WriteLine($"\tstudent");
+    }
+
+    static void ShowGoodStudents(UniversityContext context)
+    {
+        // double limit = 4;
+        // var students = context.Enrollments
+        //     .GroupBy(e => e.StudentId)
+        //     .ToList();
+    }
+
     /*
     TODO
-    1. Показ всех студентов, отсортированных по возрасту (убыв и возр);
     2. Студенты с grade > 4. Определить лучшего студента
     3. Найти и вывести студентов без курсов. + рекомндация записаться на курс с наибольшим колвом студентов
-    
     */
 
     static void PrintMenu()
     {
         Console.WriteLine("\nEnter an option:");
-        Console.WriteLine("[1] Add student");
-        Console.WriteLine("[2] Add course");
-        Console.WriteLine("[3] Show all students");
-        Console.WriteLine("[4] Show all courses");
-        Console.WriteLine("[5] Enroll student on course");
-        Console.WriteLine("[6] Show students with courses");
-        // Console.WriteLine("");
+        Console.WriteLine("[1] Print all options");
+        Console.WriteLine("[2] Student's functions");
+        Console.WriteLine("[3] Course's functions");
+        Console.WriteLine("[4] Enrollment's functions");
+        Console.WriteLine("[5] Add test data");
         Console.WriteLine("\n[c] Clear console");
         Console.WriteLine("[q] Exit");
+    }
+
+    static void PrintAllOptions()
+    {
+        Console.WriteLine("\nEnter an option:");
+        Console.WriteLine("[1] Print all options");
+        Console.WriteLine("[2] Student's functions:");
+        PrintStudentOptions();
+        Console.WriteLine("[3] Course's functions:");
+        PrintCourseOptions();
+        Console.WriteLine("[4] Enrollment's functions:");
+        PrintEnrollmentOptions();
+        Console.WriteLine("[5] Add test data");
+        Console.WriteLine("\n[c] Clear console");
+        Console.WriteLine("[q] Exit");
+    }
+
+    static void PrintStudentOptions()
+    {
+        Console.WriteLine("\t[1] Add student");
+        Console.WriteLine("\t[2] Show all students");
+        Console.WriteLine("\t[3] Update student");
+        Console.WriteLine("\t[4] Delete student");
+        Console.WriteLine("\t[5] Find students by age");
+        Console.WriteLine("\t[6] Show students sorted by age");
+        Console.WriteLine("\t[7] Show good students and the best");
+    }
+
+    static void PrintCourseOptions()
+    {
+        Console.WriteLine("\t[1] Add course");
+        Console.WriteLine("\t[2] Show all courses");
+    }
+
+    static void PrintEnrollmentOptions()
+    {
+        Console.WriteLine("\t[1] Show students with courses");
+        Console.WriteLine("\t[2] Enroll student on course");
+        Console.WriteLine("\t[3] Find courses by student");
+    }
+
+    static string GetChoice()
+    {
+        PrintMenu();
+        Console.Write("\n>> ");
+        string choice = Console.ReadLine();
+        switch (choice)
+        {
+            case "2":
+                PrintStudentOptions();
+                Console.Write("\n>> ");
+                return choice + Console.ReadLine();
+            case "3":
+                PrintCourseOptions();
+                Console.Write("\n>> ");
+                return choice + Console.ReadLine();
+            case "4":
+                PrintEnrollmentOptions();
+                Console.Write("\n>> ");
+                return choice + Console.ReadLine();
+            default:
+                return choice;
+        }
     }
 
     static void Main()
     {
         using (var context = new UniversityContext())
         {
-            SeedDatabase(context);
-            PrintMenu();
-
             while (true)
             {
-                Console.Write("\n>> ");
-                string choice = Console.ReadLine();
+                string choice = GetChoice();
                 switch (choice)
                 {
                     case "1":
+                        PrintAllOptions();
+                        break;
+
+                    case "21":
                         AddStudent(context);
                         break;
-                    case "2":
-                        AddCourse(context);
-                        break;
-                    case "3":
+                    case "22":
                         ShowAllStudents(context);
                         break;
-                    case "4":
+                    case "23":
+                        UpdateStudent(context);
+                        break;
+                    case "24":
+                        DeleteStudent(context);
+                        break;
+                    case "25":
+                        FindStudentsByAge(context);
+                        break;
+                    case "26":
+                        ShowStudentsSortedByAge(context);
+                        break;
+                    case "27":
+                        ShowGoodStudents(context);
+                        break;
+
+                    case "31":
+                        AddCourse(context);
+                        break;
+                    case "32":
                         ShowAllCourses(context);
                         break;
-                    case "5":
+
+                    case "41":
+                        QueryStudents(context);
+                        break;
+                    case "42":
                         EnrollStudent(context);
                         break;
-                    case "6":
-                        QueryStudents(context);
+                    case "43":
+                        FindCoursesByStudent(context);
+                        break;
+
+                    case "5":
+                        SeedDatabase(context);
                         break;
 
                     case "c":
                         Console.Clear();
-                        PrintMenu();
                         break;
                     case "q":
                         Console.WriteLine("Program is over");
                         return;
                     default:
-                        Console.WriteLine("");
+                        Console.WriteLine($"[ERROR] Unknown command: {choice}");
                         break;
                 }
             }
