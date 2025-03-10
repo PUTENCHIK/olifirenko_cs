@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 
 public enum GradeType
 {
@@ -39,7 +40,7 @@ interface IFileSystem
     void LoadStudentsFromFile(string filePath = "students_data.txt");
     void SaveReportToFile(string filePath = "report.txt");
     void AppendStudentToFile(string name, string filePath = "students_data.txt");
-    void AppendGradeToFile(string studentName, string course, string grade, string filePath = "grades_data.txt");
+    void AppendGradeToFile(string studentName, string course, GradeType grade, string filePath = "grades_data.txt");
     void ClearDataFile(string filePath);
     void BackupDataFile(string filePath);
     void FindStudentInFile(string studentName, string filePathStud = "students_data.txt", string filePathGrad = "grades_data.txt");
@@ -303,11 +304,16 @@ public class GradeSystem : IGrading, IFileSystem
 
     public void SaveStudentsToFile(string filePath = "students_data.txt")
     {
+        int counter = 0;
         using (StreamWriter writer = new StreamWriter(filePath))
         {
             foreach (Student student in students.Values)
+            {
                 writer.WriteLine($"{student.Name}");
+                counter++;
+            }
         }
+        Console.WriteLine($"[SUCCESS] Saved {counter} rows into {filePath}");
     }
     
     public void LoadStudentsFromFile(string filePath = "students_data.txt")
@@ -317,12 +323,18 @@ public class GradeSystem : IGrading, IFileSystem
             Console.WriteLine($"[ERROR] File {filePath} doesn't exist");
             return;
         }
+        int counter = 0;
         using (StreamReader reader = new StreamReader(filePath))
         {
             string line;
-            while ((line = reader.ReadLine().Trim()) != null)
-                AddStudent(line);
+            while ((line = reader.ReadLine()) != null)
+            {
+                var student = AddStudent(line.Trim());
+                if (student != null)
+                    counter++;
+            }
         }
+        Console.WriteLine($"[SUCCESS] Loaded {counter} students");
     }
 
     public void SaveReportToFile(string filePath = "report.txt")
@@ -353,27 +365,92 @@ public class GradeSystem : IGrading, IFileSystem
 
     public void AppendStudentToFile(string name, string filePath = "students_data.txt")
     {
-
+        using (StreamWriter writer = new StreamWriter(filePath, true))
+            writer.WriteLine(name);
+        Console.WriteLine($"[SUCCESS] Student {name} saved into {filePath}");
     }
 
-    public void AppendGradeToFile(string studentName, string course, string grade, string filePath = "grades_data.txt")
+    public void AppendGradeToFile(string studentName, string course, GradeType grade, string filePath = "grades_data.txt")
     {
-
+        using (StreamWriter writer = new StreamWriter(filePath, true))
+            writer.WriteLine($"{studentName}, {course}, {grade}");
+        Console.WriteLine($"[SUCCESS] Grade {grade} for {studentName}: {course} saved into {filePath}");
     }
 
     public void ClearDataFile(string filePath)
     {
-
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"[ERROR] File {filePath} doesn't exist");
+            return;
+        }
+        using (StreamWriter writer = new StreamWriter(filePath))
+            writer.Write("");
+        Console.WriteLine($"[SUCCESS] File {filePath} has been cleared");
     }
 
     public void BackupDataFile(string filePath)
     {
-
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"[ERROR] File {filePath} doesn't exist");
+            return;
+        }
+        string[] filePathSplited = filePath.Split('.');
+        if (filePathSplited.Length == 0)
+        {
+            Console.WriteLine($"[ERROR] File {filePath} doesn't have extention. Impossible to create backup file");
+            return;
+        }
+        string backupFilePath = filePathSplited[0] + "_backup.txt";
+        using (StreamWriter writer = new StreamWriter(backupFilePath))
+            writer.Write(File.ReadAllText(filePath));
+        Console.WriteLine($"[SUCCESS] All data saved to {backupFilePath}");
     }
 
     public void FindStudentInFile(string studentName, string filePathStud = "students_data.txt", string filePathGrad = "grades_data.txt")
     {
-
+        if (!File.Exists(filePathStud))
+        {
+            Console.WriteLine($"[ERROR] File {filePathStud} doesn't exist");
+            return;
+        }
+        if (!File.Exists(filePathGrad))
+        {
+            Console.WriteLine($"[ERROR] File {filePathGrad} doesn't exist");
+            return;
+        }
+        bool studentExists = false;
+        using (StreamReader readerStudents = new StreamReader(filePathStud))
+        {
+            string studentLine;
+            while ((studentLine = readerStudents.ReadLine()) != null)
+            {
+                if (studentLine.Trim() == studentName)
+                {
+                    studentExists = true;
+                    Console.WriteLine($"{studentName}'s grades from {filePathGrad}:");
+                    bool gradesExist = false;
+                    using (StreamReader readerGrades = new StreamReader(filePathGrad))
+                    {
+                        string gradeLine;
+                        while ((gradeLine = readerGrades.ReadLine()) != null)
+                        {
+                            string[] parts = gradeLine.Split(',');
+                            if (parts.Length == 3 && Enum.TryParse(parts[2].Trim(), out GradeType grade) && parts[0].Trim() == studentName)
+                            {
+                                gradesExist = true;
+                                Console.WriteLine($"\t{parts[1].Trim()}: {grade}");
+                            }
+                        }
+                    }
+                    if (!gradesExist)
+                        Console.WriteLine("\tgrades not found");
+                }
+            }
+        }
+        if (!studentExists)
+        Console.WriteLine($"Student {studentName} not found in {filePathStud}");
     }
 }
 
@@ -405,9 +482,9 @@ class Program
         Console.WriteLine("[sr] Save report to file");
         Console.WriteLine("[as] Append student to file");
         Console.WriteLine("[ag] Append grade to file");
-        Console.WriteLine("[cd] Clear data file");
+        Console.WriteLine("[cf] Clear data file");
         Console.WriteLine("[bd] Backup data file");
-        Console.WriteLine("[fs] Find studentIn file");
+        Console.WriteLine("[fs] Find student in file");
         Console.WriteLine("\nMenu:");
         Console.WriteLine("[0]  Add prepared data");
         Console.WriteLine("[1]  Add student");
@@ -423,9 +500,9 @@ class Program
         Console.WriteLine("\n[99] Exit + save report");
     }
 
-    static string GetFilePath(string label)
+    static string GetFilePath(string label, bool canBeEmpty = true)
     {
-        Console.Write($"Enter file name {label} (empty to save into default file): ");
+        Console.Write($"Enter file name {label}" + (canBeEmpty ? " (empty to save into default file): " : ": "));
         return Console.ReadLine();
     }
     
@@ -449,19 +526,107 @@ class Program
 
     static void SaveStudentsToFile()
     {
-
+        string filePath = GetFilePath("to save students");
+        if (filePath.Length == 0)
+            gs.SaveStudentsToFile();
+        else
+            gs.SaveStudentsToFile(filePath);
     }
 
     static void LoadStudentsFromFile()
     {
-
+        string filePath = GetFilePath("to load students");
+        if (filePath.Length == 0)
+            gs.LoadStudentsFromFile();
+        else
+            gs.LoadStudentsFromFile(filePath);
     }
 
     static void SaveReportToFile()
     {
-
+        gs.SaveReportToFile();
     }
 
+    static void AppendStudentToFile()
+    {
+        Console.Write("Enter student's name: ");
+        string name = Console.ReadLine();
+        if (name.Length == 0)
+        {
+            Console.WriteLine("Name must ne longer than 0");
+            return;
+        }
+        string filePath = GetFilePath("to save student");
+        if (filePath.Length == 0)
+            gs.AppendStudentToFile(name);
+        else
+            gs.AppendStudentToFile(name, filePath);
+    }
+
+    static void AppendGradeToFile()
+    {
+        Console.Write("Enter student's name: ");
+        string name = Console.ReadLine();
+        if (name.Length == 0)
+        {
+            Console.WriteLine("Name must ne longer than 0");
+            return;
+        }
+        Console.Write("Enter course's name: ");
+        string course = Console.ReadLine();
+        if (course.Length == 0)
+        {
+            Console.WriteLine("Name must ne longer than 0");
+            return;
+        }
+        GradeType? grade = GetGrade();
+        if (grade == null)
+            return;
+        string filePath = GetFilePath("to save grade");
+        if (filePath.Length == 0)
+            gs.AppendGradeToFile(name, course, grade ?? GradeType.passably);
+        else
+            gs.AppendGradeToFile(name, course, grade ?? GradeType.passably, filePath);
+    }
+
+    static void ClearDataFile()
+    {
+        string filePath = GetFilePath("to clear file", false);
+        if (filePath.Length == 0)
+            Console.WriteLine("File name must be longer than 0");
+        else
+            gs.ClearDataFile(filePath);
+    }
+
+    static void BackupDataFile()
+    {
+        string filePath = GetFilePath("to backup data", false);
+        if (filePath.Length == 0)
+            Console.WriteLine("File name must be longer than 0");
+        else
+            gs.BackupDataFile(filePath);
+    }
+
+    static void FindStudentInFile()
+    {
+        Console.Write("Enter student's name: ");
+        string studentName = Console.ReadLine();
+        if (studentName.Length == 0)
+        {
+            Console.WriteLine("Name must ne longer than 0");
+            return;
+        }
+        string filePathStud = GetFilePath("with students");
+        string filePathGrad = GetFilePath("with grades");
+        if (filePathStud.Length == 0 && filePathGrad.Length == 0)
+            gs.FindStudentInFile(studentName);
+        else if (filePathStud.Length == 0)
+            gs.FindStudentInFile(studentName, filePathGrad: filePathGrad);
+        else if (filePathGrad.Length == 0)
+            gs.FindStudentInFile(studentName, filePathStud: filePathStud);
+        else
+            gs.FindStudentInFile(studentName, filePathStud, filePathGrad);
+    }
 
     static void AddPreparedData()
     {
@@ -664,6 +829,21 @@ class Program
                     break;
                 case "sr":
                     SaveReportToFile();
+                    break;
+                case "as":
+                    AppendStudentToFile();
+                    break;
+                case "ag":
+                    AppendGradeToFile();
+                    break;
+                case "cf":
+                    ClearDataFile();
+                    break;
+                case "bd":
+                    BackupDataFile();
+                    break;
+                case "fs":
+                    FindStudentInFile();
                     break;
 
                 case "0":
