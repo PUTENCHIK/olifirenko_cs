@@ -376,17 +376,44 @@ class Program
 
     static void ShowGoodStudents(UniversityContext context)
     {
-        // double limit = 4;
-        // var students = context.Enrollments
-        //     .GroupBy(e => e.StudentId)
-        //     .ToList();
+        double limit = 4;
+        var highAchieres = context.Students
+            .Where(s => s.Enrollments.Any())
+            .Select(s => new { Student = s, AvgGrade = s.Enrollments.Average(e => e.Grade) })
+            .Where(s => s.AvgGrade > limit)
+            .ToList();
+        if (highAchieres.Count > 0)
+        {
+            Console.WriteLine($"Students with avg grade > {limit}:");
+            foreach (var entity in highAchieres)
+                Console.WriteLine($"\t{entity.Student}: avg = {entity.AvgGrade}");
+            var bestStudent = highAchieres.OrderByDescending(s => s.AvgGrade).FirstOrDefault();
+            Console.WriteLine($"\nBest student: {bestStudent.Student} - avg = {bestStudent.AvgGrade}");
+        }
+        else Console.WriteLine($"No students with avg grade > {limit}");
     }
 
-    /*
-    TODO
-    2. Студенты с grade > 4. Определить лучшего студента
-    3. Найти и вывести студентов без курсов. + рекомндация записаться на курс с наибольшим колвом студентов
-    */
+    static void FindStudentsWithoutCourses(UniversityContext context)
+    {
+        var studentsWithoutCourses = context.Students
+            .Where(s => !s.Enrollments.Any())
+            .ToList();
+        if (studentsWithoutCourses.Count > 0)
+        {
+            Console.WriteLine("Students without courses:");
+            foreach (var student in studentsWithoutCourses)
+                Console.WriteLine($"\t{student}");
+            var mostPopularCourse = context.Courses
+                .Select(c => new { Course = c, StudentCount = context.Enrollments.Count(e => e.CourseId == c.Id ) })
+                .OrderByDescending(c => c.StudentCount)
+                .FirstOrDefault();
+            if (mostPopularCourse != null)
+                Console.WriteLine($"\nMost popular course: {mostPopularCourse.Course} - {mostPopularCourse.StudentCount} student(s)");
+            else
+                Console.WriteLine("\nNo courses");
+        }
+        else Console.WriteLine("All students have courses");
+    }
 
     static void PrintMenu()
     {
@@ -437,6 +464,7 @@ class Program
         Console.WriteLine("\t[1] Show students with courses");
         Console.WriteLine("\t[2] Enroll student on course");
         Console.WriteLine("\t[3] Find courses by student");
+        Console.WriteLine("\t[4] Find students without courses");
     }
 
     static string GetChoice()
@@ -513,6 +541,9 @@ class Program
                         break;
                     case "43":
                         FindCoursesByStudent(context);
+                        break;
+                    case "44":
+                        FindStudentsWithoutCourses(context);
                         break;
 
                     case "5":
