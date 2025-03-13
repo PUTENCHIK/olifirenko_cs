@@ -50,7 +50,7 @@ public class Comment
             cuttedBody = Body;
         else
             cuttedBody = Body.Substring(0, bodyLimit) + "...";
-        return $"[{Id}]:[{PostId}] ({Email}): '{cuttedBody}'";
+        return $"[{Id}]: post [{PostId}] ({Email}): '{cuttedBody}'";
     }
 }
 
@@ -250,6 +250,14 @@ class Program
 
     static async Task EndsWithComments()
     {
+        Console.Write("Enter email's domain: ");
+        string endString = Console.ReadLine();
+        if (endString.Length == 0)
+        {
+            Console.WriteLine("Domain must be longer than 0");
+            return;
+        }
+
         using (HttpClient client = new HttpClient())
         {
             string url = "https://jsonplaceholder.typicode.com/comments";
@@ -259,7 +267,6 @@ class Program
                 string json = await response.Content.ReadAsStringAsync();
                 List<Comment> comments = JsonConvert.DeserializeObject<List<Comment>>(json);
 
-                string endString = "@vance.io";
                 var endsWithComments = comments.Where(c => c.Email.EndsWith(endString)).ToList();
                 Console.WriteLine($"Comments end with '{endString}':");
                 if (endsWithComments.Count == 0)

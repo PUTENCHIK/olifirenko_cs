@@ -6,3 +6,4 @@
 2. [Студентики](GradesApp/).
 3. [Иерархия классов](ClassHierarchySystem/).
 4. [Приложение с базой данных](DatabaseApp/).
+5. [Обращение к jsonplaceholder.typicode.com](HttpServerApp/).
