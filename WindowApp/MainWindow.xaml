@@ -5,7 +5,48 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WindowApp"
         mc:Ignorable="d"
-        Title="User List" Height="450" Width="800">
+        Title="User List" Height="450" Width="800"
+        Closing="WindowClosing">
+    <Window.Resources>
+        <Style x:Key="TextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="Gray" />
+            <Setter Property="Margin" Value="5" />
+        </Style>
+
+        <Style x:Key="ButtonSubmitStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Background" Value="LightSkyBlue" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style x:Key="ButtonDeleteStyle" TargetType="Button">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Background" Value="Red" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style x:Key="ListBoxStyle" TargetType="ListBox">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Margin" Value="5" />
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Margin" Value="5" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="FontWeight" Value="Bold" />
+                    <Setter Property="Foreground" Value="Green" />
+                    <Setter Property="Background" Value="LightBlue" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>        
+    </Window.Resources>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -13,22 +54,47 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <TextBox Name="UserNameInput"
-                Width="200" Height="30"
-                Text="Enter name"
-                GotFocus="TextBox_GotFocus"
-                LostFocus="TextBox_LostFocus">
-            </TextBox>
+                     Width="200" Height="30"
+                     Text="Enter name"
+                     GotFocus="TextBox_GotFocus"
+                     LostFocus="TextBox_LostFocus"
+                     Margin="60,10,456,10"
+                     Style="{StaticResource TextBoxStyle}" />
+
+            <TextBox Name="UserAgeInput"
+                     Width="100" Height="30"
+                     Text="Enter age"
+                     GotFocus="AgeTextBox_GotFocus"
+                     LostFocus="AgeTextBox_LostFocus"
+                     Margin="300,10,367,10"
+                     Style="{StaticResource TextBoxStyle}" />
 
             <Button Content="Add"
-                    Width="100" Height="30"
+                    Width="70" Height="30"
                     Click="AddUser_Click"
-                    Margin="317,10,109,10" />
+                    Margin="250,10,109,10"
+                    Style="{StaticResource ButtonSubmitStyle}" />
+
+            <TextBox Name="SearchBox"
+                     Width="150" Height="30"
+                     Text="Search.."
+                     GotFocus="SearchBox_GotFocus"
+                     LostFocus="SearchBox_LostFocus"
+                     KeyUp="SearchBox_KeyUp"
+                     Margin="602,10,10,10"
+                     Style="{StaticResource TextBoxStyle}" />
+
+            <Button Content="Delete"
+                    Width="70" Height="30"
+                    Click="DeleteUser_Click"
+                    Margin="330,10,30,10"
+                    Style="{StaticResource ButtonDeleteStyle}" />
         </Grid>
 
         <ListBox Grid.Row="1"
                  Name="UserListBox"
                  SelectionChanged="UserListBox_SelectionChanged"
-                 />
+                 Style="{StaticResource ListBoxStyle}" />
         
     </Grid>
 </Window>
